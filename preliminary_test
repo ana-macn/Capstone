@@ -1,0 +1,103 @@
+from __future__ import print_function
+import time
+from dronekit import connect, VehicleMode, LocationGlobalRelative
+from pymavlink import mavutil # Needed for command message definitions
+import math
+
+"""
+ This code will take the data of the Flexpoint Glove to control the drone's movement takeoff and landing
+    """
+
+#Global Variables
+c = 0 #switch for the first takeoff command
+ground_speed = 1 #speed the drone will move UP or DOWN
+duration = 5 # how many seconds the movement will last
+
+# Set up option parsing to get connection string
+import argparse
+parser = argparse.ArgumentParser(description='Commands vehicle using vehicle.simple_goto.')
+parser.add_argument('--connect',
+                    help="Vehicle connection target string. If not specified, SITL automatically started and used.")
+args = parser.parse_args()
+
+connection_string = args.connect
+sitl = None
+
+
+# Start SITL if no connection string specified
+if not connection_string:
+    import dronekit_sitl
+    sitl = dronekit_sitl.start_default()
+    connection_string = sitl.connection_string()
+
+
+# Connect to the Vehicle
+print('Connecting to vehicle on: %s' % connection_string)
+vehicle = connect(connection_string, wait_ready=True)
+
+def arm_and_takeoff(aTargetAltitude):
+    """
+    Arms vehicle and fly to aTargetAltitude.
+    """
+
+    print("Basic pre-arm checks")
+    # Don't try to arm until autopilot is ready
+    while not vehicle.is_armable:
+        print(" Waiting for vehicle to initialise...")
+        time.sleep(1)
+
+    print("Arming motors")
+    # Copter should arm in GUIDED mode
+    vehicle.mode = VehicleMode("GUIDED")
+    vehicle.armed = True
+
+    # Confirm vehicle armed before attempting to take off
+    while not vehicle.armed:
+        print(" Waiting for arming...")
+        time.sleep(1)
+
+    print("Vehicle takes off")
+    vehicle.simple_takeoff(aTargetAltitude)  # Take off to target altitude
+
+    # Wait until the vehicle reaches a safe height before processing the goto
+    #  (otherwise the command after Vehicle.simple_takeoff will execute
+    #   immediately).
+    while True:
+        print(" Altitude: ", vehicle.location.global_relative_frame.alt)
+        # Break and return from function just below target altitude.
+        if vehicle.location.global_relative_frame.alt >= aTargetAltitude * 0.95:
+            print("Reached target altitude")
+            break
+        time.sleep(2)
+
+
+## Main Code
+# if the test value "glove" is greater than the value XXX then the drone will elevate and stay in an altitude of 5
+
+while c=0:
+
+    if XXX > 0:
+        print("The vehicle will take off ")
+        arm_and_takeoff(aTargetAltitude)
+        while XXX > 0 and XXX < 1980:
+            #Vehicle will maintain in the same altitude and position
+            print("The vehicle will hover ")
+            vehicle.mode = VehicleMode("LOITER")
+            print(" The Altitude is: ", vehicle.location.global_relative_frame.alt)
+
+        if XXX = 3500
+            print("The vehicle will start descending")
+            c = 1
+
+
+#Vehicle is ready for landing
+vehicle.mode = VehicleMode("LAND")
+print("The vehicle mode is: ", vehicle.mode.name)
+vehicle.armed = False
+# Close vehicle object before exiting script
+print("Close vehicle object")
+vehicle.close()
+
+# Shut down simulator if it was started.
+if sitl:
+    sitl.stop()
